@@ -54,7 +54,7 @@ renderMahasiswaLayoutStart(
             <section class="info-card">
               <h2>Menu Fitur Mahasiswa</h2>
               <div class="menu-grid">
-                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_pengajuan.php')) ?>">
+                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_tugas.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 6H16" stroke-width="1.8" stroke-linecap="round" />
                     <path d="M8 10H16" stroke-width="1.8" stroke-linecap="round" />
@@ -76,7 +76,7 @@ renderMahasiswaLayoutStart(
                   <small>Lihat agenda konsultasi dan kegiatan bimbingan secara terpisah.</small>
                 </a>
 
-                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_riwayat.php')) ?>">
+                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_seminar.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 7V12L15 14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                     <circle cx="12" cy="12" r="8.5" stroke-width="1.8" />

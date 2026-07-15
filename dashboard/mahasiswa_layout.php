@@ -7,9 +7,9 @@ function mahasiswaSidebarMenus(string $activePath): array
 {
     $menus = [
         ['label' => 'Dashboard', 'href' => '/dashboard/mahasiswa_dashboard.php'],
-        ['label' => 'Pengajuan Judul', 'href' => '/dashboard/mahasiswa_pengajuan.php'],
+        ['label' => 'Tugas Akhir', 'href' => '/dashboard/mahasiswa_tugas.php'],
         ['label' => 'Jadwal Bimbingan', 'href' => '/dashboard/mahasiswa_jadwal.php'],
-        ['label' => 'Riwayat Tugas Akhir', 'href' => '/dashboard/mahasiswa_riwayat.php'],
+        ['label' => 'Status Seminar', 'href' => '/dashboard/mahasiswa_seminar.php'],
         ['label' => 'Profil Mahasiswa', 'href' => '/dashboard/mahasiswa_profil.php'],
     ];
 
@@ -86,7 +86,7 @@ function renderMahasiswaLayoutStart(
       min-height: 100vh;
       background: #eef0f4;
       font-family: "Trebuchet MS", Arial, sans-serif;
-      color: #2f2f2f;
+      color: #2f2f2fff;
     }
 
     .dashboard-shell {
@@ -98,8 +98,8 @@ function renderMahasiswaLayoutStart(
     .dashboard-sidebar {
       width: 280px;
       padding: 28px 22px;
-      background: #41495c;
-      color: #ffffff;
+      background: #3f4452;
+      color: #ffffffff;
       display: flex;
       flex-direction: column;
       gap: 26px;
