@@ -13,7 +13,8 @@ renderMahasiswaLayoutStart(
     'Jadwal Bimbingan',
     'Halaman khusus untuk melihat agenda bimbingan dan jadwal kegiatan tugas akhir.',
     $user,
-    $sidebarMenus
+    $sidebarMenus,
+    $accountData
 );
 ?>
         <div class="grid-two-column">

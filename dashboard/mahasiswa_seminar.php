@@ -13,7 +13,8 @@ renderMahasiswaLayoutStart(
     'Riwayat Tugas Akhir',
     'Halaman khusus untuk melihat progres, revisi, dan histori aktivitas tugas akhir.',
     $user,
-    $sidebarMenus
+    $sidebarMenus,
+    $accountData
 );
 ?>
         <div class="grid-two-column">

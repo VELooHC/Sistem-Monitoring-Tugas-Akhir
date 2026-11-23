@@ -2,14 +2,26 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../config/koneksi.php';
+
+requireLogin(['mahasiswa']);
+$user = currentUser();
+$userId = (int) ($user['id'] ?? 0);
+$accountData = fetchLoggedMahasiswa($koneksi, $userId);
+
+if ($accountData === null) {
+    $accountData = [
+        'nama_lengkap' => (string) ($user['username'] ?? ''),
+    ];
+}
 
 function mahasiswaSidebarMenus(string $activePath): array
 {
     $menus = [
         ['label' => 'Dashboard', 'href' => '/dashboard/mahasiswa_dashboard.php'],
-        ['label' => 'Pengajuan Judul', 'href' => '/dashboard/mahasiswa_pengajuan.php'],
+        ['label' => 'Tugas Akhir', 'href' => '/dashboard/mahasiswa_tugas.php'],
         ['label' => 'Jadwal Bimbingan', 'href' => '/dashboard/mahasiswa_jadwal.php'],
-        ['label' => 'Riwayat Tugas Akhir', 'href' => '/dashboard/mahasiswa_riwayat.php'],
+        ['label' => 'Status Seminar', 'href' => '/dashboard/mahasiswa_seminar.php'],
         ['label' => 'Profil Mahasiswa', 'href' => '/dashboard/mahasiswa_profil.php'],
     ];
 
@@ -70,6 +82,7 @@ function renderMahasiswaLayoutStart(
     string $headerDescription,
     array $user,
     array $sidebarMenus,
+    array $accountData,
     bool $showLogout = false
 ): void {
     ?>
@@ -86,7 +99,7 @@ function renderMahasiswaLayoutStart(
       min-height: 100vh;
       background: #eef0f4;
       font-family: "Trebuchet MS", Arial, sans-serif;
-      color: #2f2f2f;
+      color: #2f2f2fff;
     }
 
     .dashboard-shell {
@@ -98,8 +111,8 @@ function renderMahasiswaLayoutStart(
     .dashboard-sidebar {
       width: 280px;
       padding: 28px 22px;
-      background: #41495c;
-      color: #ffffff;
+      background: #3f4452;
+      color: #ffffffff;
       display: flex;
       flex-direction: column;
       gap: 26px;
@@ -297,7 +310,7 @@ function renderMahasiswaLayoutStart(
     .stats-grid,
     .quick-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(1, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -351,6 +364,22 @@ function renderMahasiswaLayoutStart(
       color: #67707d;
       font-weight: 700;
       line-height: 1.45;
+    }
+
+    .quick-box {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .quick-box:hover {
+      text-decoration: none;
+    }
+
+    .quick-box strong,
+    .quick-box span {
+      text-decoration: none;
     }
 
     .stat-box strong,
@@ -509,7 +538,7 @@ function renderMahasiswaLayoutStart(
           <path d="M15 49C18.5 40.5 24.6 37 32 37C39.4 37 45.5 40.5 49 49" stroke="#A3A4AA" stroke-width="3" stroke-linecap="round" />
         </svg>
         <div class="brand-copy">
-          <strong>Panel Mahasiswa</strong>
+          <strong><?= e((string) $accountData['nama_lengkap']) ?></strong>
           <span>Pusat aktivitas tugas akhir</span>
         </div>
       </div>

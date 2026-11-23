@@ -123,7 +123,8 @@ renderMahasiswaLayoutStart(
     'Profil Mahasiswa',
     'Kelola data akun Anda sendiri tanpa membuat tampilan dashboard utama menjadi terlalu padat.',
     $user,
-    $sidebarMenus
+    $sidebarMenus,
+    $accountData
 );
 ?>
         <div class="grid-two-column">

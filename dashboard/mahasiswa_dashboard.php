@@ -22,18 +22,18 @@ if ($accountData === null) {
 
 renderMahasiswaLayoutStart(
     'Dashboard Mahasiswa',
-    'Dashboard Mahasiswa',
-    'Pantau ringkasan aktivitas utama dan buka setiap fitur melalui halaman yang terpisah.',
+    'Dashboard',
+    'Selamat datang, ' . (string) ($accountData['nama_lengkap'] ?? $user['username'] ?? 'Mahasiswa'),
     $user,
     $sidebarMenus,
+    $accountData,
     true
 );
 ?>
         <div class="grid-two-column">
           <div class="content-column">
             <section class="info-card">
-              <h2>Informasi Akun</h2>
-              <p>Selamat datang, <?= e((string) $accountData['nama_lengkap']) ?>.</p>
+              <h2>Kalender TA</h2>
               <p>Dashboard utama kini dibuat lebih ringkas agar navigasi ke setiap fitur mahasiswa lebih rapi.</p>
               <div class="list-block">
                 <div class="account-row">
@@ -54,7 +54,7 @@ renderMahasiswaLayoutStart(
             <section class="info-card">
               <h2>Menu Fitur Mahasiswa</h2>
               <div class="menu-grid">
-                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_pengajuan.php')) ?>">
+                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_tugas.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 6H16" stroke-width="1.8" stroke-linecap="round" />
                     <path d="M8 10H16" stroke-width="1.8" stroke-linecap="round" />
@@ -65,18 +65,7 @@ renderMahasiswaLayoutStart(
                   <small>Kelola pengajuan judul tugas akhir pada halaman tersendiri.</small>
                 </a>
 
-                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_jadwal.php')) ?>">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke-width="1.8" />
-                    <path d="M7.5 3.5V7" stroke-width="1.8" stroke-linecap="round" />
-                    <path d="M16.5 3.5V7" stroke-width="1.8" stroke-linecap="round" />
-                    <path d="M3.5 9H20.5" stroke-width="1.8" />
-                  </svg>
-                  <span>Jadwal Bimbingan</span>
-                  <small>Lihat agenda konsultasi dan kegiatan bimbingan secara terpisah.</small>
-                </a>
-
-                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_riwayat.php')) ?>">
+                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_seminar.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 7V12L15 14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                     <circle cx="12" cy="12" r="8.5" stroke-width="1.8" />
@@ -100,25 +89,16 @@ renderMahasiswaLayoutStart(
 
           <div class="content-column">
             <section class="info-card">
-              <h2>Ringkasan Cepat</h2>
+              <h2>Info Cepat</h2>
               <div class="quick-grid">
                 <div class="quick-box">
-                  <strong>4</strong>
+                  <strong>Status Bimbingan</strong>
                   <span>Halaman fitur terpisah agar dashboard lebih rapi</span>
                 </div>
-                <div class="quick-box">
-                  <strong>1</strong>
-                  <span>Profil akun tersedia di menu profil mahasiswa</span>
-                </div>
-                <div class="quick-box">
-                  <strong>Aktif</strong>
-                  <span>Akses dashboard tetap terlindungi oleh session login</span>
-                </div>
-                <div class="quick-box">
-                  <strong>Mudah</strong>
-                  <span>Navigasi sidebar dipakai untuk pindah antar halaman fitur</span>
-                </div>
-              </div>
+                <a class="quick-box" href="<?= e(appPath('/dashboard/mahasiswa_jadwal.php')) ?>">         
+                  <strong>Catatan</strong>
+                  <span>Halaman fitur terpisah agar dashboard lebih rapi</span>
+                </a>
             </section>
 
             <section class="info-card">

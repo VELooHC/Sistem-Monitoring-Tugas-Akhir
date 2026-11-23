@@ -386,13 +386,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="login-shell">
     <section class="welcome-panel" aria-label="Sambutan sistem">
       <div class="welcome-content">
-        <span class="welcome-badge">SISTEM MONITORING TA</span>
+        <span class="welcome-badge">SIAMBITA</span>
         <div>
-          <h1 class="welcome-title">Selamat datang di Sistem Monitoring Tugas Akhir</h1>
+          <h1 class="welcome-title">Selamat datang di Sistem Monitoring dan Bimbingan Tugas Akhir</h1>
         </div>
         <p class="welcome-copy">
           Pantau progres, bimbingan, dan pengelolaan data akademik dalam satu sistem
-          yang terintegrasi untuk admin, dosen, dan mahasiswa.
+          yang terintegrasi.
         </p>
         <ul class="welcome-points">
           <li>Akses informasi tugas akhir dengan lebih terstruktur.</li>
