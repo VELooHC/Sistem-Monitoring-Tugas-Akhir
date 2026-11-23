@@ -118,3 +118,8 @@ renderMahasiswaLayoutStart(
         } 
 
 <?php renderMahasiswaLayoutEnd(); ?>
+<?php if (isset($_GET['edit']) && $_GET['edit'] === 'success'): ?>
+    <div class="alert alert-success">
+        Judul tugas akhir berhasil diperbarui!
+    </div>
+<?php endif; ?>
