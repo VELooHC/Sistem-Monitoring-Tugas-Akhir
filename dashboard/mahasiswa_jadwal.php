@@ -111,9 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $appointments = [];
 $appointmentsStatement = mysqli_prepare(
     $koneksi,
-    'SELECT b.tanggal_bimbingan, b.waktu_bimbingan, b.agenda,
-            b.catatan_bimbingan, b.status_progres, b.status_review,
-            b.catatan_dosen, d.nama_lengkap AS nama_dosen
+    'SELECT b.id_bimbingan, b.tanggal_bimbingan, b.waktu_bimbingan, b.agenda,
+            b.catatan_bimbingan, b.catatan_dosen, b.status_progres, b.status_review,
+            d.nama_lengkap AS nama_dosen
      FROM bimbingan b
      LEFT JOIN dosen d ON d.nidn = b.id_dosen
      WHERE b.nim = ?
@@ -146,13 +146,50 @@ renderMahasiswaLayoutStart(
     $accountData
 );
 ?>
-<div class="grid-two-column">
+<div class="grid-two-column schedule-layout">
   <div class="content-column">
     <section class="info-card">
-      <h2>Tambah Agenda</h2>
+      <h2>Agenda dan Catatan</h2>
       <?php if ($pesan !== ''): ?>
         <div class="message-box message-<?= e($jenisPesan) ?>"><?= e($pesan) ?></div>
       <?php endif; ?>
+      <?php if ($appointments === []): ?>
+        <p>Belum ada agenda bimbingan.</p>
+      <?php else: ?>
+        <div class="table-responsive">
+          <table class="guidance-table">
+            <thead>
+              <tr><th>Tanggal / Waktu</th><th>Agenda</th><th>Status</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+              <?php foreach ($appointments as $appointment): ?>
+                <?php
+                $detailUrl = appPath('/dashboard/mahasiswa_bimbingan_detail.php')
+                    . '?id=' . (int) $appointment['id_bimbingan'];
+                ?>
+                <tr class="clickable-row" data-href="<?= e($detailUrl) ?>" tabindex="0">
+                  <td><?= e((string) $appointment['tanggal_bimbingan']) ?><?= !empty($appointment['waktu_bimbingan']) ? '<small>' . e(substr((string) $appointment['waktu_bimbingan'], 0, 5)) . '</small>' : '' ?></td>
+                  <td>
+                    <strong><?= e((string) $appointment['agenda']) ?></strong>
+                    <small>Dosen: <?= e((string) ($appointment['nama_dosen'] ?? 'Belum ditentukan')) ?></small>
+                  </td>
+                  <td>
+                    <span class="status-chip"><?= e((string) ($appointment['status_progres'] ?: 'Belum ditentukan')) ?></span>
+                    <small><?= e((string) $appointment['status_review']) ?></small>
+                  </td>
+                  <td><a href="<?= e($detailUrl) ?>">Lihat catatan</a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <div class="content-column">
+    <section class="info-card">
+      <h2>Tambah Agenda</h2>
       <?php if (!empty($dosen['nama_lengkap'])): ?>
         <p>Dosen pembimbing: <strong><?= e((string) $dosen['nama_lengkap']) ?></strong></p>
       <?php endif; ?>
@@ -184,27 +221,33 @@ renderMahasiswaLayoutStart(
       </form>
     </section>
   </div>
-
-  <div class="content-column">
-    <section class="info-card">
-      <h2>Agenda dan Catatan</h2>
-      <?php if ($appointments === []): ?>
-        <p>Belum ada agenda bimbingan.</p>
-      <?php else: ?>
-        <div class="list-block">
-          <?php foreach ($appointments as $appointment): ?>
-            <article class="list-item">
-              <strong><?= e((string) $appointment['agenda']) ?></strong>
-              <span><?= e((string) $appointment['tanggal_bimbingan']) ?><?= !empty($appointment['waktu_bimbingan']) ? ' · ' . e(substr((string) $appointment['waktu_bimbingan'], 0, 5)) : '' ?></span>
-              <span>Dosen: <?= e((string) ($appointment['nama_dosen'] ?? 'Belum ditentukan')) ?></span>
-              <span>Status: <?= e((string) ($appointment['status_progres'] ?: 'Belum ditentukan')) ?> · <?= e((string) $appointment['status_review']) ?></span>
-              <span>Catatan: <?= e((string) (($appointment['catatan_bimbingan'] ?? '') !== '' ? $appointment['catatan_bimbingan'] : 'Belum ada catatan')) ?></span>
-              <span>Catatan dosen: <?= e((string) (($appointment['catatan_dosen'] ?? '') !== '' ? $appointment['catatan_dosen'] : 'Belum ada catatan')) ?></span>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-    </section>
-  </div>
 </div>
+<style>
+.schedule-layout { grid-template-columns: minmax(0, 1.35fr) minmax(280px, .95fr); }
+.table-responsive { overflow-x: auto; }
+.guidance-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.guidance-table th, .guidance-table td { padding: 13px 12px; border-bottom: 1px solid #e8ebf1; text-align: left; vertical-align: top; }
+.guidance-table th { background: #f5f7fb; color: #475061; font-size: .88rem; }
+.guidance-table td { color: #3d4552; font-weight: 700; }
+.guidance-table td small { display: block; margin-top: 5px; color: #67707d; }
+.guidance-table td a { color: #2450bf; font-weight: 800; text-decoration: none; }
+.clickable-row { cursor: pointer; }
+.clickable-row:hover, .clickable-row:focus { background: #f8fbff; outline: none; }
+.status-chip { display: inline-block; padding: 5px 9px; border-radius: 999px; background: #e7f0ff; color: #2450bf; font-size: .8rem; font-weight: 800; }
+@media (max-width: 640px) { .schedule-layout { grid-template-columns: 1fr; } }
+</style>
+<script>
+document.querySelectorAll('.clickable-row').forEach(function (row) {
+  row.addEventListener('click', function (event) {
+    if (event.target.closest('a')) return;
+    window.location.href = row.dataset.href;
+  });
+  row.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      window.location.href = row.dataset.href;
+    }
+  });
+});
+</script>
 <?php renderMahasiswaLayoutEnd(); ?>

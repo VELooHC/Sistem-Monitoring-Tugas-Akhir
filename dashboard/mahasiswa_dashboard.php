@@ -21,6 +21,76 @@ if ($accountData === null) {
 }
 
 $nim = (string) ($accountData['nim'] ?? '');
+$today = new DateTimeImmutable('today');
+$selectedMonth = (int) ($_GET['month'] ?? $today->format('n'));
+$selectedYear = (int) ($_GET['year'] ?? $today->format('Y'));
+if ($selectedMonth < 1 || $selectedMonth > 12 || $selectedYear < 2000 || $selectedYear > 2100) {
+    $selectedMonth = (int) $today->format('n');
+    $selectedYear = (int) $today->format('Y');
+}
+$monthStart = new DateTimeImmutable(sprintf('%04d-%02d-01', $selectedYear, $selectedMonth));
+$monthEnd = $monthStart->modify('+1 month');
+$calendarEvents = [];
+
+if ($nim !== '' && $nim !== '-') {
+    $calendarStatement = mysqli_prepare(
+        $koneksi,
+        "SELECT agenda.tanggal, agenda.waktu, agenda.jenis, agenda.keterangan
+         FROM (
+             SELECT b.tanggal_bimbingan AS tanggal, b.waktu_bimbingan AS waktu,
+                    'Bimbingan' AS jenis, b.agenda AS keterangan
+             FROM bimbingan b
+             WHERE b.nim = ? AND b.tanggal_bimbingan >= ? AND b.tanggal_bimbingan < ?
+             UNION ALL
+             SELECT DATE(j.tanggal_kegiatan) AS tanggal, TIME(j.tanggal_kegiatan) AS waktu,
+                    j.jenis_kegiatan AS jenis, j.ruangan AS keterangan
+             FROM jadwal_ta j
+             WHERE j.nim = ? AND j.tanggal_kegiatan >= ? AND j.tanggal_kegiatan < ?
+         ) AS agenda
+         ORDER BY agenda.tanggal ASC, agenda.waktu ASC"
+    );
+    if ($calendarStatement === false) {
+        throw new RuntimeException('Gagal menyiapkan kalender tugas akhir.');
+    }
+
+    $monthFrom = $monthStart->format('Y-m-d');
+    $monthUntil = $monthEnd->format('Y-m-d');
+    mysqli_stmt_bind_param(
+        $calendarStatement,
+        'ssssss',
+        $nim,
+        $monthFrom,
+        $monthUntil,
+        $nim,
+        $monthFrom,
+        $monthUntil
+    );
+    if (!mysqli_stmt_execute($calendarStatement)) {
+        mysqli_stmt_close($calendarStatement);
+        throw new RuntimeException('Gagal mengambil agenda kalender tugas akhir.');
+    }
+    $calendarResult = mysqli_stmt_get_result($calendarStatement);
+    if ($calendarResult instanceof mysqli_result) {
+        while ($event = mysqli_fetch_assoc($calendarResult)) {
+            $calendarEvents[] = $event;
+        }
+    }
+    mysqli_stmt_close($calendarStatement);
+}
+
+$calendarByDate = [];
+foreach ($calendarEvents as $event) {
+    $calendarByDate[(string) $event['tanggal']][] = $event;
+}
+$monthNames = [
+    1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+$previousMonth = $monthStart->modify('-1 month');
+$nextMonth = $monthStart->modify('+1 month');
+$firstWeekdayOffset = (int) $monthStart->format('N') - 1;
+$daysInMonth = (int) $monthStart->format('t');
+
 $latestGuidance = null;
 if ($nim !== '' && $nim !== '-') {
     $guidanceStatement = mysqli_prepare(
@@ -64,7 +134,45 @@ renderMahasiswaLayoutStart(
           <div class="content-column">
             <section class="info-card">
               <h2>Kalender TA</h2>
-              <p>Dashboard utama kini dibuat lebih ringkas agar navigasi ke setiap fitur mahasiswa lebih rapi.</p>
+              <div class="calendar-heading">
+                <div class="calendar-navigation">
+                  <a href="?month=<?= (int) $previousMonth->format('n') ?>&amp;year=<?= (int) $previousMonth->format('Y') ?>" aria-label="Bulan sebelumnya">&lsaquo;</a>
+                  <strong><?= e($monthNames[$selectedMonth] . ' ' . (string) $selectedYear) ?></strong>
+                  <a href="?month=<?= (int) $nextMonth->format('n') ?>&amp;year=<?= (int) $nextMonth->format('Y') ?>" aria-label="Bulan berikutnya">&rsaquo;</a>
+                </div>
+              </div>
+              <div class="calendar-grid" role="grid" aria-label="Kalender tugas akhir mahasiswa">
+                <?php foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $weekday): ?>
+                  <strong class="calendar-weekday"><?= e($weekday) ?></strong>
+                <?php endforeach; ?>
+                <?php for ($blank = 0; $blank < $firstWeekdayOffset; $blank++): ?>
+                  <span class="calendar-day is-empty" aria-hidden="true"></span>
+                <?php endfor; ?>
+                <?php for ($day = 1; $day <= $daysInMonth; $day++): ?>
+                  <?php
+                  $dateKey = $monthStart->setDate($selectedYear, $selectedMonth, $day)->format('Y-m-d');
+                  $dayEvents = $calendarByDate[$dateKey] ?? [];
+                  ?>
+                  <div class="calendar-day<?= $dateKey === $today->format('Y-m-d') ? ' is-today' : '' ?>">
+                    <span class="calendar-date"><?= $day ?></span>
+                    <?php foreach (array_slice($dayEvents, 0, 2) as $dayEvent): ?>
+                      <span class="calendar-event" title="<?= e((string) $dayEvent['jenis'] . ': ' . $dayEvent['keterangan']) ?>">
+                        <?= e((string) $dayEvent['jenis']) ?>
+                      </span>
+                    <?php endforeach; ?>
+                    <?php if (count($dayEvents) > 2): ?>
+                      <span class="calendar-more">+<?= count($dayEvents) - 2 ?> agenda</span>
+                    <?php endif; ?>
+                  </div>
+                <?php endfor; ?>
+              </div>
+              <?php if ($calendarEvents === []): ?>
+                <p class="calendar-empty">Belum ada agenda tugas akhir pada bulan ini.</p>
+              <?php endif; ?>
+            </section>
+
+            <section class="info-card">
+              <h2>Ringkasan Tugas Akhir</h2>
               <div class="list-block">
                 <div class="account-row">
                   <span>NIM</span>
@@ -167,4 +275,76 @@ renderMahasiswaLayoutStart(
             </section>
           </div>
         </div>
+        <style>
+        .calendar-heading,
+        .calendar-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .calendar-heading h2 {
+            margin-bottom: 12px;
+        }
+        .calendar-navigation {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        .calendar-navigation a {
+            color: #2450bf;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-decoration: none;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .calendar-weekday {
+            padding: 8px 2px;
+            color: #67707d;
+            text-align: center;
+        }
+        .calendar-day {
+            min-height: 76px;
+            padding: 7px;
+            border: 1px solid #e1e6ef;
+            border-radius: 10px;
+            background: #f8f9fc;
+            overflow: hidden;
+        }
+        .calendar-day.is-empty {
+            border-color: transparent;
+            background: transparent;
+        }
+        .calendar-day.is-today {
+            border-color: #2450bf;
+        }
+        .calendar-date {
+            display: block;
+            margin-bottom: 4px;
+            color: #2e3442;
+            font-weight: 800;
+        }
+        .calendar-event,
+        .calendar-more {
+            display: block;
+            overflow: hidden;
+            color: #2450bf;
+            font-size: .7rem;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .calendar-more,
+        .calendar-empty {
+            color: #67707d;
+        }
+        @media (max-width: 640px) {
+            .calendar-grid { gap: 3px; }
+            .calendar-day { min-height: 58px; padding: 4px; }
+            .calendar-event, .calendar-more { font-size: .6rem; }
+        }
+        </style>
 <?php renderMahasiswaLayoutEnd(); ?>

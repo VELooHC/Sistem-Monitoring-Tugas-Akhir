@@ -28,6 +28,20 @@ function adminSidebarMenus(string $activePage): array
         ],
 
         [
+            'title' => 'Data Pendamping',
+            'icon'  => 'fas fa-user-tie',
+            'url'   => '/dashboard/admin_pendamping.php',
+            'active'=> $activePage === '/dashboard/admin_pendamping.php'
+        ],
+
+        [
+            'title' => 'Data Penguji',
+            'icon'  => 'fas fa-user-check',
+            'url'   => '/dashboard/admin_penguji.php',
+            'active'=> $activePage === '/dashboard/admin_penguji.php'
+        ],
+
+        [
             'title' => 'Arsip',
             'icon'  => 'fas fa-book',
             'url'   => '/dashboard/admin_arsip.php',
