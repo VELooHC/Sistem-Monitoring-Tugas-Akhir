@@ -76,7 +76,7 @@ function renderDosenLayoutStart(
     string $headerDescription,
     array $user,
     array $sidebarMenus,
-    bool $showLogout = false
+    bool $showLogout = true
 ): void {
     ?>
 <!DOCTYPE html>

@@ -83,7 +83,7 @@ function renderMahasiswaLayoutStart(
     array $user,
     array $sidebarMenus,
     array $accountData,
-    bool $showLogout = false
+    bool $showLogout = true
 ): void {
     ?>
 <!DOCTYPE html>

@@ -17,6 +17,33 @@ body {
   background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
 }
 
+body.dashboard-screen {
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  background: #eef0f4;
+}
+
+.dashboard-shell {
+  width: 100%;
+}
+
+.dashboard-sidebar {
+  flex: 0 0 280px;
+  min-height: 100vh;
+}
+
+.dashboard-main {
+  min-width: 0;
+}
+
+@media (max-width: 920px) {
+  .dashboard-sidebar {
+    flex-basis: auto;
+    min-height: auto;
+  }
+}
+
 .page-layout {
   width: min(100%, 480px);
   padding: 32px;
