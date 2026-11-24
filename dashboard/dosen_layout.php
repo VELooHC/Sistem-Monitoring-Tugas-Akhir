@@ -7,9 +7,9 @@ function dosenSidebarMenus(string $activePath): array
 {
     $menus = [
         ['label' => 'Dashboard', 'href' => '/dashboard/dosen_dashboard.php'],
-        ['label' => 'Jadwal Bimbingan', 'href' => '/dashboard/dosen_jadwal.php'],
+        ['label' => 'Bimbingan', 'href' => '/dashboard/dosen_jadwal.php'],
         ['label' => 'Data Mahasiswa', 'href' => '/dashboard/dosen_mahasiswa.php'],
-        ['label' => 'Riwayat Seminar', 'href' => '/dashboard/dosen_seminar.php'],
+        ['label' => 'Seminar / Sidang', 'href' => '/dashboard/dosen_seminar.php'],
         ['label' => 'Profil Dosen', 'href' => '/dashboard/dosen_profil.php'],
     ];
 

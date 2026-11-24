@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/config/koneksi.php';
+require_once __DIR__ . '/includes/activity_log.php';
 
 if (isLoggedIn()) {
     redirectByRole((string) $_SESSION['role']);
@@ -50,6 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = (string) $user['id'];
                 $_SESSION['username'] = (string) $user['username'];
                 $_SESSION['role'] = (string) $user['role'];
+                recordActivity(
+                    $koneksi,
+                    (int) $user['id'],
+                    'Login',
+                    'Login berhasil dengan role ' . (string) $user['role']
+                );
                 redirectByRole((string) $user['role']);
             }
         }

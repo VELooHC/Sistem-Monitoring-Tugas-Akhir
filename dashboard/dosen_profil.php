@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../includes/activity_log.php';
 require_once __DIR__ . '/dosen_layout.php';
 
 requireLogin(['dosen']);
@@ -104,6 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_close($dosenStatement);
 
             mysqli_commit($koneksi);
+            recordActivity(
+                $koneksi,
+                $userId,
+                'Ubah profil dosen',
+                'Username diperbarui menjadi ' . $newUsername
+            );
             $_SESSION['username'] = $newUsername;
             redirectDosenPage('/dashboard/dosen_profil.php', ['status' => 'updated']);
         } catch (Throwable $exception) {

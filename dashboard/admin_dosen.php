@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 requireLogin(['admin']);
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../includes/activity_log.php';
 
 $user = currentUser();
 $successMessage = '';
@@ -207,6 +208,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 mysqli_commit($koneksi);
+                recordActivity(
+                    $koneksi,
+                    (int) ($user['id'] ?? 0),
+                    $action === 'create' ? 'Tambah dosen' : 'Ubah data dosen',
+                    'NIDN ' . $nidn . ' · ' . $namaLengkap
+                );
                 redirectToDosenPage($action === 'create' ? 'created' : 'updated');
             } catch (Throwable $exception) {
                 mysqli_rollback($koneksi);
@@ -247,6 +254,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($userStatement);
 
                 mysqli_commit($koneksi);
+                recordActivity(
+                    $koneksi,
+                    (int) ($user['id'] ?? 0),
+                    'Hapus dosen',
+                    'ID akun dosen ' . $idUser
+                );
                 redirectToDosenPage('deleted');
             } catch (Throwable $exception) {
                 mysqli_rollback($koneksi);

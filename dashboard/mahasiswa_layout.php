@@ -21,7 +21,7 @@ function mahasiswaSidebarMenus(string $activePath): array
         ['label' => 'Dashboard', 'href' => '/dashboard/mahasiswa_dashboard.php'],
         ['label' => 'Tugas Akhir', 'href' => '/dashboard/mahasiswa_tugas.php'],
         ['label' => 'Jadwal Bimbingan', 'href' => '/dashboard/mahasiswa_jadwal.php'],
-        ['label' => 'Status Seminar', 'href' => '/dashboard/mahasiswa_seminar.php'],
+        ['label' => 'Seminar / Sidang', 'href' => '/dashboard/mahasiswa_seminar.php'],
         ['label' => 'Profil Mahasiswa', 'href' => '/dashboard/mahasiswa_profil.php'],
     ];
 

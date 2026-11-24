@@ -20,6 +20,36 @@ if ($accountData === null) {
     ];
 }
 
+$nim = (string) ($accountData['nim'] ?? '');
+$latestGuidance = null;
+if ($nim !== '' && $nim !== '-') {
+    $guidanceStatement = mysqli_prepare(
+        $koneksi,
+        'SELECT b.tanggal_bimbingan, b.waktu_bimbingan, b.agenda,
+                b.catatan_bimbingan, d.nama_lengkap AS nama_dosen
+         FROM bimbingan b
+         LEFT JOIN dosen d ON d.nidn = b.id_dosen
+         WHERE b.nim = ?
+         ORDER BY b.tanggal_bimbingan DESC, b.waktu_bimbingan DESC, b.id_bimbingan DESC
+         LIMIT 1'
+    );
+
+    if ($guidanceStatement === false) {
+        throw new RuntimeException('Gagal menyiapkan data bimbingan terbaru.');
+    }
+
+    mysqli_stmt_bind_param($guidanceStatement, 's', $nim);
+    if (!mysqli_stmt_execute($guidanceStatement)) {
+        throw new RuntimeException('Gagal mengambil data bimbingan terbaru.');
+    }
+
+    $guidanceResult = mysqli_stmt_get_result($guidanceStatement);
+    $latestGuidance = $guidanceResult instanceof mysqli_result
+        ? mysqli_fetch_assoc($guidanceResult)
+        : null;
+    mysqli_stmt_close($guidanceStatement);
+}
+
 renderMahasiswaLayoutStart(
     'Dashboard Mahasiswa',
     'Dashboard',
@@ -64,16 +94,24 @@ renderMahasiswaLayoutStart(
                   <span>Pengajuan Judul</span>
                   <small>Kelola pengajuan judul tugas akhir pada halaman tersendiri.</small>
                 </a>
-
+                <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_jadwal.php')) ?>">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke-width="1.8" />
+                    <path d="M7.5 3.5V7" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M16.5 3.5V7" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M3.5 9H20.5" stroke-width="1.8" />
+                  </svg>
+                  <span>Jadwal Bimbingan</span>
+                  <small>Tambahkan agenda bimbingan dan catatan pertemuan.</small>
+                </a>
                 <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_seminar.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 7V12L15 14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                     <circle cx="12" cy="12" r="8.5" stroke-width="1.8" />
                   </svg>
-                  <span>Riwayat Tugas Akhir</span>
-                  <small>Buka catatan progres dan histori aktivitas pada halaman sendiri.</small>
+                  <span>Seminar / Sidang</span>
+                  <small>Unggah dokumen dan pantau penilaian serta catatan dosen.</small>
                 </a>
-
                 <a class="menu-card" href="<?= e(appPath('/dashboard/mahasiswa_profil.php')) ?>">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="8" r="3" stroke-width="1.8" />
@@ -91,14 +129,19 @@ renderMahasiswaLayoutStart(
             <section class="info-card">
               <h2>Info Cepat</h2>
               <div class="quick-grid">
-                <div class="quick-box">
-                  <strong>Status Bimbingan</strong>
-                  <span>Halaman fitur terpisah agar dashboard lebih rapi</span>
-                </div>
-                <a class="quick-box" href="<?= e(appPath('/dashboard/mahasiswa_jadwal.php')) ?>">         
-                  <strong>Catatan</strong>
-                  <span>Halaman fitur terpisah agar dashboard lebih rapi</span>
+                <a class="quick-box" href="<?= e(appPath('/dashboard/mahasiswa_jadwal.php')) ?>">
+                  <strong>Bimbingan Terbaru</strong>
+                  <?php if ($latestGuidance !== null): ?>
+                    <span><?= e((string) $latestGuidance['tanggal_bimbingan']) ?><?= !empty($latestGuidance['waktu_bimbingan']) ? ' · ' . e(substr((string) $latestGuidance['waktu_bimbingan'], 0, 5)) : '' ?></span>
+                    <span><?= e((string) (($latestGuidance['agenda'] ?? '') !== '' ? $latestGuidance['agenda'] : ($latestGuidance['catatan_bimbingan'] ?? 'Agenda bimbingan'))) ?></span>
+                    <?php if (!empty($latestGuidance['nama_dosen'])): ?>
+                      <span>Dosen: <?= e((string) $latestGuidance['nama_dosen']) ?></span>
+                    <?php endif; ?>
+                  <?php else: ?>
+                    <span>Belum ada agenda bimbingan.</span>
+                  <?php endif; ?>
                 </a>
+              </div>
             </section>
 
             <section class="info-card">
@@ -113,8 +156,8 @@ renderMahasiswaLayoutStart(
                   <span>Buka halaman jadwal untuk melihat agenda konsultasi dan persiapan bimbingan.</span>
                 </li>
                 <li class="list-item">
-                  <strong>Riwayat Tugas Akhir</strong>
-                  <span>Lihat histori progres, revisi, dan status dokumen tugas akhir di halaman riwayat.</span>
+                  <strong>Seminar / Sidang</strong>
+                  <span>Lihat status, nilai, dan catatan dosen untuk dokumen seminar atau sidang.</span>
                 </li>
                 <li class="list-item">
                   <strong>Profil Mahasiswa</strong>

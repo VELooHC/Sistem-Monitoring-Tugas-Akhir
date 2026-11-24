@@ -53,8 +53,11 @@ function adminSidebarMenus(string $activePage): array
 function fetchAdminAccountData(mysqli $koneksi, int $idUser): ?array
 {
     $sql = <<<SQL
+        SELECT users.id_user, users.username, users.role
         FROM users
-        INNER JOIN admin ON admin.id_user = users.id_user
+        WHERE users.id_user = ?
+          AND users.role = 'admin'
+        LIMIT 1
     SQL;
 
     $statement = mysqli_prepare($koneksi, $sql);
@@ -64,7 +67,10 @@ function fetchAdminAccountData(mysqli $koneksi, int $idUser): ?array
     }
 
     mysqli_stmt_bind_param($statement, 'i', $idUser);
-    mysqli_stmt_execute($statement);
+    if (!mysqli_stmt_execute($statement)) {
+        mysqli_stmt_close($statement);
+        return null;
+    }
 
     $result = mysqli_stmt_get_result($statement);
 

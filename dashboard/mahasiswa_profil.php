@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../includes/activity_log.php';
 require_once __DIR__ . '/mahasiswa_layout.php';
 
 requireLogin(['mahasiswa']);
@@ -105,6 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_close($mahasiswaStatement);
 
             mysqli_commit($koneksi);
+            recordActivity(
+                $koneksi,
+                $userId,
+                'Ubah profil mahasiswa',
+                'Username diperbarui menjadi ' . $newUsername
+            );
             $_SESSION['username'] = $newUsername;
             redirectMahasiswaPage('/dashboard/mahasiswa_profil.php', ['status' => 'updated']);
         } catch (Throwable $exception) {

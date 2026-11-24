@@ -32,7 +32,12 @@ CREATE TABLE `bimbingan` (
   `nim` char(9) NOT NULL,
   `id_dosen` int(11) NOT NULL,
   `tanggal_bimbingan` date NOT NULL,
-  `catatan_bimbingan` text DEFAULT NULL
+  `waktu_bimbingan` time DEFAULT NULL,
+  `agenda` varchar(255) NOT NULL DEFAULT '',
+  `catatan_bimbingan` text DEFAULT NULL,
+  `status_progres` varchar(40) DEFAULT NULL,
+  `status_review` enum('Menunggu Review','Revisi','Disetujui') NOT NULL DEFAULT 'Menunggu Review',
+  `catatan_dosen` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -44,11 +49,13 @@ CREATE TABLE `bimbingan` (
 CREATE TABLE `dokumen` (
   `id_dokumen` int(11) NOT NULL,
   `nim` char(9) NOT NULL,
-  `jenis_dokumen` enum('Proposal','Surat Pengajuan','Surat Penelitian','Seminar Proposal','Seminar Hasil','Skripsi','Lainnya') NOT NULL,
+  `jenis_dokumen` enum('Proposal','Surat Pengajuan','Surat Penelitian','Seminar Proposal','Seminar Hasil','Sidang Tugas Akhir','Skripsi','Lainnya') NOT NULL,
   `nama_file` varchar(255) NOT NULL,
   `file_path` varchar(255) NOT NULL,
+  `google_drive_id` varchar(100) DEFAULT NULL,
   `tanggal_upload` datetime DEFAULT current_timestamp(),
   `status_persetujuan` enum('Menunggu','Disetujui','Ditolak','Revisi') DEFAULT 'Menunggu',
+  `nilai` decimal(5,2) DEFAULT NULL,
   `catatan` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -143,6 +150,22 @@ CREATE TABLE `penguji` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `penilaian_seminar`
+--
+
+CREATE TABLE `penilaian_seminar` (
+  `id_penilaian` int(11) NOT NULL,
+  `id_jadwal` int(11) NOT NULL,
+  `id_dosen` int(11) NOT NULL,
+  `nilai` decimal(5,2) NOT NULL,
+  `catatan` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tugas_akhir`
 --
 
@@ -151,7 +174,11 @@ CREATE TABLE `tugas_akhir` (
   `nim` char(9) NOT NULL,
   `judul_ta` varchar(255) NOT NULL,
   `tanggal_update` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `status_ta` enum('Belum Mengajukan','Menunggu Persetujuan','Disetujui','Ditolak','Revisi') DEFAULT 'Belum Mengajukan'
+  `status_ta` enum('Belum Mengajukan','Menunggu Persetujuan','Disetujui','Ditolak','Revisi') DEFAULT 'Belum Mengajukan',
+  `nama_file` varchar(255) DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `google_drive_id` varchar(100) DEFAULT NULL,
+  `tanggal_upload` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -240,6 +267,14 @@ ALTER TABLE `penguji`
   ADD KEY `fk_penguji_dosen` (`id_dosen`);
 
 --
+-- Indexes for table `penilaian_seminar`
+--
+ALTER TABLE `penilaian_seminar`
+  ADD PRIMARY KEY (`id_penilaian`),
+  ADD UNIQUE KEY `uq_penilaian_jadwal_dosen` (`id_jadwal`,`id_dosen`),
+  ADD KEY `fk_penilaian_dosen` (`id_dosen`);
+
+--
 -- Indexes for table `tugas_akhir`
 --
 ALTER TABLE `tugas_akhir`
@@ -286,6 +321,12 @@ ALTER TABLE `log_aktivitas`
 --
 ALTER TABLE `penguji`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `penilaian_seminar`
+--
+ALTER TABLE `penilaian_seminar`
+  MODIFY `id_penilaian` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tugas_akhir`
@@ -347,6 +388,13 @@ ALTER TABLE `mahasiswa`
 ALTER TABLE `penguji`
   ADD CONSTRAINT `fk_penguji` FOREIGN KEY (`id_jadwal`) REFERENCES `jadwal_ta` (`id_jadwal`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_penguji_dosen` FOREIGN KEY (`id_dosen`) REFERENCES `dosen` (`id_user`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `penilaian_seminar`
+--
+ALTER TABLE `penilaian_seminar`
+  ADD CONSTRAINT `fk_penilaian_jadwal` FOREIGN KEY (`id_jadwal`) REFERENCES `jadwal_ta` (`id_jadwal`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_penilaian_dosen` FOREIGN KEY (`id_dosen`) REFERENCES `dosen` (`id_user`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tugas_akhir`
