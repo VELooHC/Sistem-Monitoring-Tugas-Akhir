@@ -190,6 +190,78 @@ $drive = new Google\Service\Drive($client);
 $uploadedFile = null;
 
 try {
+    // Kunci baris mahasiswa agar dua request upload dari akun yang sama
+    // tidak bisa lolos pengecekan secara bersamaan.
+    if (!mysqli_begin_transaction($koneksi)) {
+        throw new RuntimeException('Gagal memulai transaksi database.');
+    }
+    $transactionStarted = true;
+
+    $lockStatement = mysqli_prepare(
+        $koneksi,
+        'SELECT nim FROM mahasiswa WHERE nim = ? FOR UPDATE'
+    );
+    if ($lockStatement === false) {
+        throw new RuntimeException('Gagal menyiapkan penguncian akun mahasiswa.');
+    }
+    mysqli_stmt_bind_param($lockStatement, 's', $nim);
+    if (!mysqli_stmt_execute($lockStatement)) {
+        mysqli_stmt_close($lockStatement);
+        throw new RuntimeException('Gagal mengunci akun mahasiswa.');
+    }
+    $lockResult = mysqli_stmt_get_result($lockStatement);
+    $lockedMahasiswa = $lockResult instanceof mysqli_result
+        ? mysqli_fetch_assoc($lockResult)
+        : null;
+    mysqli_stmt_close($lockStatement);
+
+    if ($lockedMahasiswa === null) {
+        throw new RuntimeException('Data akun mahasiswa tidak ditemukan.');
+    }
+
+    // Satu akun hanya boleh memiliki satu file untuk setiap jenis dokumen.
+    if ($isSeminar) {
+        $checkStatement = mysqli_prepare(
+            $koneksi,
+            'SELECT id_dokumen FROM dokumen
+             WHERE nim = ? AND jenis_dokumen = ?
+             LIMIT 1'
+        );
+        if ($checkStatement === false) {
+            throw new RuntimeException('Gagal memeriksa dokumen yang sudah diunggah.');
+        }
+        mysqli_stmt_bind_param($checkStatement, 'ss', $nim, $jenisDokumen);
+    } else {
+        $checkStatement = mysqli_prepare(
+            $koneksi,
+            'SELECT id_ta FROM tugas_akhir
+             WHERE nim = ?
+             LIMIT 1'
+        );
+        if ($checkStatement === false) {
+            throw new RuntimeException('Gagal memeriksa file tugas akhir yang sudah diunggah.');
+        }
+        mysqli_stmt_bind_param($checkStatement, 's', $nim);
+    }
+
+    if (!mysqli_stmt_execute($checkStatement)) {
+        mysqli_stmt_close($checkStatement);
+        throw new RuntimeException('Gagal memeriksa status unggahan sebelumnya.');
+    }
+    $checkResult = mysqli_stmt_get_result($checkStatement);
+    $alreadyUploaded = $checkResult instanceof mysqli_result
+        && mysqli_num_rows($checkResult) > 0;
+    mysqli_stmt_close($checkStatement);
+
+    if ($alreadyUploaded) {
+        mysqli_rollback($koneksi);
+        $transactionStarted = false;
+        kembali(
+            'Dokumen ' . $jenisDokumen . ' sudah pernah diunggah. Untuk menggantinya, hapus terlebih dahulu data dokumen di database dan file lamanya di Google Drive, lalu unggah file baru.',
+            $targetPage
+        );
+    }
+
     $contents = file_get_contents($temporaryFile);
     if ($contents === false) {
         throw new RuntimeException('Tidak dapat membaca file sementara.');
@@ -223,7 +295,7 @@ try {
                 'role' => 'reader',
                 'emailAddress' => $email,
             ]),
-            ['sendNotificationEmail' => false]
+            ['sendNotificationEmail' => true]
         );
     }
 
@@ -231,11 +303,6 @@ try {
     if ($driveLink === '' || !in_array((string) parse_url($driveLink, PHP_URL_HOST), ['drive.google.com', 'docs.google.com'], true)) {
         $driveLink = 'https://drive.google.com/file/d/' . rawurlencode($driveId) . '/view';
     }
-
-    if (!mysqli_begin_transaction($koneksi)) {
-        throw new RuntimeException('Gagal memulai transaksi database.');
-    }
-    $transactionStarted = true;
 
     if ($isSeminar) {
         $stmt = mysqli_prepare(

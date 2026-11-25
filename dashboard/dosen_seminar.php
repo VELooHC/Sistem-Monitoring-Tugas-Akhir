@@ -65,31 +65,143 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = 'error';
         } else {
             $score = number_format((float) $scoreInput, 2, '.', '');
-            $save = mysqli_prepare(
-                $koneksi,
-                'INSERT INTO penilaian_seminar (id_jadwal, id_dosen, nilai, catatan)
-                 VALUES (?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE nilai = VALUES(nilai), catatan = VALUES(catatan)'
-            );
-            if ($save === false) {
-                throw new RuntimeException('Gagal menyiapkan penyimpanan nilai seminar/sidang.');
-            }
-            mysqli_stmt_bind_param($save, 'iiss', $scheduleId, $userId, $score, $notes);
-            if (!mysqli_stmt_execute($save)) {
-                error_log('Simpan penilaian seminar: ' . mysqli_stmt_error($save));
-                $message = 'Penilaian gagal disimpan. Silakan coba lagi.';
-                $messageType = 'error';
+
+            // Simpan nilai dan sinkronkan hasil akhir dokumen dalam satu transaksi.
+            mysqli_begin_transaction($koneksi);
+
+            try {
+                $save = mysqli_prepare(
+                    $koneksi,
+                    'INSERT INTO penilaian_seminar (id_jadwal, id_dosen, nilai, catatan)
+                     VALUES (?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE nilai = VALUES(nilai), catatan = VALUES(catatan)'
+                );
+
+                if ($save === false) {
+                    throw new RuntimeException('Gagal menyiapkan penyimpanan nilai seminar/sidang.');
+                }
+
+                mysqli_stmt_bind_param($save, 'iiss', $scheduleId, $userId, $score, $notes);
+
+                if (!mysqli_stmt_execute($save)) {
+                    $error = mysqli_stmt_error($save);
+                    mysqli_stmt_close($save);
+                    throw new RuntimeException('Gagal menyimpan nilai: ' . $error);
+                }
+
                 mysqli_stmt_close($save);
-            } else {
-                mysqli_stmt_close($save);
+
+                // Hitung jumlah penguji yang ditugaskan dan jumlah yang sudah menilai.
+                // DISTINCT mencegah satu dosen yang tercatat lebih dari sekali dihitung ganda.
+                $summary = mysqli_prepare(
+                    $koneksi,
+                    'SELECT
+                        COUNT(DISTINCT p.id_dosen) AS jumlah_penguji,
+                        COUNT(DISTINCT ps.id_dosen) AS jumlah_penilai,
+                        AVG(ps.nilai) AS rata_rata
+                     FROM penguji p
+                     LEFT JOIN penilaian_seminar ps
+                       ON ps.id_jadwal = p.id_jadwal
+                      AND ps.id_dosen = p.id_dosen
+                     WHERE p.id_jadwal = ?'
+                );
+
+                if ($summary === false) {
+                    throw new RuntimeException('Gagal menyiapkan perhitungan nilai akhir.');
+                }
+
+                mysqli_stmt_bind_param($summary, 'i', $scheduleId);
+
+                if (!mysqli_stmt_execute($summary)) {
+                    $error = mysqli_stmt_error($summary);
+                    mysqli_stmt_close($summary);
+                    throw new RuntimeException('Gagal menghitung nilai akhir: ' . $error);
+                }
+
+                $summaryResult = mysqli_stmt_get_result($summary);
+                $scoreSummary = $summaryResult instanceof mysqli_result
+                    ? mysqli_fetch_assoc($summaryResult)
+                    : null;
+
+                if ($summaryResult instanceof mysqli_result) {
+                    mysqli_free_result($summaryResult);
+                }
+                mysqli_stmt_close($summary);
+
+                $assignedCount = (int) ($scoreSummary['jumlah_penguji'] ?? 0);
+                $gradedCount = (int) ($scoreSummary['jumlah_penilai'] ?? 0);
+
+                // Status dan nilai dokumen baru ditetapkan jika semua penguji sudah mengisi.
+                if ($assignedCount > 0 && $gradedCount === $assignedCount) {
+                    $average = (float) $scoreSummary['rata_rata'];
+
+                    if ($average >= 70) {
+                        $documentStatus = 'Lulus';
+                    } elseif ($average >= 50) {
+                        $documentStatus = 'Revisi';
+                    } else {
+                        $documentStatus = 'Mengulang';
+                    }
+
+                    $updateDocument = mysqli_prepare(
+                        $koneksi,
+                        'UPDATE dokumen
+                         SET nilai = ?, status_persetujuan = ?
+                         WHERE id_dokumen = (
+                             SELECT id_dokumen FROM (
+                                 SELECT id_dokumen
+                                 FROM dokumen
+                                 WHERE nim = ? AND jenis_dokumen = ?
+                                 ORDER BY id_dokumen DESC
+                                 LIMIT 1
+                             ) AS latest_document
+                         )'
+                    );
+
+                    if ($updateDocument === false) {
+                        throw new RuntimeException('Gagal menyiapkan pembaruan status dokumen.');
+                    }
+
+                    $studentNim = (string) $assignedEvent['nim'];
+                    $activityType = (string) $assignedEvent['jenis_kegiatan'];
+                    mysqli_stmt_bind_param(
+                        $updateDocument,
+                        'dsss',
+                        $average,
+                        $documentStatus,
+                        $studentNim,
+                        $activityType
+                    );
+
+                    if (!mysqli_stmt_execute($updateDocument)) {
+                        $error = mysqli_stmt_error($updateDocument);
+                        mysqli_stmt_close($updateDocument);
+                        throw new RuntimeException('Gagal memperbarui status dokumen: ' . $error);
+                    }
+
+                    mysqli_stmt_close($updateDocument);
+                }
+
+                mysqli_commit($koneksi);
+
                 recordActivity(
                     $koneksi,
                     $userId,
                     'Penilaian seminar / sidang',
                     (string) $assignedEvent['jenis_kegiatan'] . ' · NIM ' . (string) $assignedEvent['nim']
                         . ' · nilai ' . $score
+                        . ($assignedCount > 0 && $gradedCount === $assignedCount
+                            ? ' · nilai akhir ' . number_format((float) $scoreSummary['rata_rata'], 2)
+                                . ' · status ' . $documentStatus
+                            : ' · menunggu penilaian penguji lain')
                 );
+
                 redirectDosenPage('/dashboard/dosen_seminar.php', ['status' => 'updated']);
+            } catch (Throwable $exception) {
+                mysqli_rollback($koneksi);
+                error_log('Simpan penilaian seminar: ' . $exception->getMessage());
+                $message = 'Penilaian gagal diproses. Silakan coba lagi.';
+                $messageType = 'error';
             }
         }
     }
@@ -101,7 +213,8 @@ $statement = mysqli_prepare(
             p.peran, m.nama_lengkap, m.judul_ta,
             doc.nama_file, doc.file_path,
             mine.nilai AS nilai_saya, mine.catatan AS catatan_saya,
-            scores.rata_rata, scores.jumlah_penilai
+            scores.rata_rata, scores.jumlah_penilai,
+            assignments.jumlah_penguji
      FROM (
          SELECT id_jadwal, id_dosen, MIN(peran) AS peran
          FROM penguji
@@ -123,6 +236,11 @@ $statement = mysqli_prepare(
          FROM penilaian_seminar
          GROUP BY id_jadwal
      ) scores ON scores.id_jadwal = j.id_jadwal
+     LEFT JOIN (
+         SELECT id_jadwal, COUNT(DISTINCT id_dosen) AS jumlah_penguji
+         FROM penguji
+         GROUP BY id_jadwal
+     ) assignments ON assignments.id_jadwal = j.id_jadwal
      WHERE p.id_dosen = ?
        AND (m.id_dosen IS NULL OR m.id_dosen <> ?)
      ORDER BY j.tanggal_kegiatan DESC, j.id_jadwal DESC"
@@ -216,8 +334,11 @@ renderDosenLayoutStart(
             <?php foreach ($eventsByCategory[$category] as $event): ?>
               <?php
               $average = $event['rata_rata'] === null ? null : (float) $event['rata_rata'];
-              $grade = gradeFromAverage($average);
-              $outcome = resultFromGrade($grade);
+              $jumlahPenilai = (int) ($event['jumlah_penilai'] ?? 0);
+              $jumlahPenguji = (int) ($event['jumlah_penguji'] ?? 0);
+              $allGraded = $jumlahPenguji > 0 && $jumlahPenilai === $jumlahPenguji;
+              $grade = $allGraded ? gradeFromAverage($average) : 'Menunggu';
+              $outcome = $allGraded ? resultFromGrade($grade) : 'Menunggu penilaian (' . $jumlahPenilai . '/' . $jumlahPenguji . ')';
               ?>
               <tr>
                 <td>
@@ -237,8 +358,10 @@ renderDosenLayoutStart(
                   <?php endif; ?>
                 </td>
                 <td>
-                  <?= $average !== null ? e(number_format($average, 2, ',', '.')) . ' / 100' : 'Belum dinilai' ?>
-                  <small><?= (int) ($event['jumlah_penilai'] ?? 0) ?> penguji memberi nilai</small>
+                  <?= $allGraded && $average !== null
+                      ? e(number_format($average, 2, ',', '.')) . ' / 100'
+                      : ($average !== null ? 'Rata-rata sementara: ' . e(number_format($average, 2, ',', '.')) : 'Belum dinilai') ?>
+                  <small><?= $jumlahPenilai ?>/<?= $jumlahPenguji ?> penguji memberi nilai</small>
                 </td>
                 <td>
                   <strong><?= e($grade) ?></strong>

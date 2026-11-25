@@ -525,6 +525,191 @@ function renderMahasiswaLayoutStart(
       .action-button {
         width: 100%;
       }
+
+/* =========================================
+   SYARAT DAN KETENTUAN TUGAS AKHIR
+========================================= */
+
+.ta-requirements {
+    min-width: 0;
+}
+
+.ta-intro {
+    color: #67707d;
+    font-size: .9rem;
+    line-height: 1.7;
+    margin-bottom: 16px;
+}
+
+.ta-source-note,
+.ta-info-note,
+.ta-footer-note {
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin: 14px 0;
+    background: #f3f6fc;
+    border: 1px solid #e1e8f5;
+}
+
+.ta-source-note strong,
+.ta-info-note strong,
+.ta-footer-note strong {
+    display: block;
+    margin-bottom: 7px;
+    color: #2450bf;
+}
+
+.ta-source-note span,
+.ta-info-note p,
+.ta-footer-note p {
+    display: block;
+    color: #586273;
+    font-size: .85rem;
+    line-height: 1.65;
+}
+
+.ta-requirement-group {
+    border: 1px solid #e3e7ee;
+    border-radius: 11px;
+    margin: 12px 0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.ta-requirement-group > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    cursor: pointer;
+    list-style: none;
+    transition: background .2s ease;
+}
+
+.ta-requirement-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.ta-requirement-group > summary::after {
+    content: "+";
+    margin-left: auto;
+    color: #2450bf;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.ta-requirement-group[open] > summary::after {
+    content: "−";
+}
+
+.ta-requirement-group > summary:hover {
+    background: #f6f8fc;
+}
+
+.ta-requirement-group > summary > span:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.ta-requirement-group > summary strong {
+    color: #303847;
+    font-size: .9rem;
+}
+
+.ta-requirement-group > summary small {
+    color: #77808e;
+    font-size: .75rem;
+}
+
+.ta-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #edf2ff;
+    color: #2450bf;
+    font-size: .8rem;
+    font-weight: 800;
+}
+
+.ta-requirement-group > .list-block {
+    padding: 0 15px 12px;
+}
+
+.ta-requirement-group .list-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.ta-requirement-group .list-item:last-child {
+    border-bottom: none;
+}
+
+.ta-requirement-group .list-item strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #303847;
+    font-size: .85rem;
+}
+
+.ta-requirement-group .list-item span {
+    display: block;
+    color: #687383;
+    font-size: .82rem;
+    line-height: 1.7;
+}
+
+.ta-info-note ul {
+    padding-left: 20px;
+    margin: 8px 0 0;
+}
+
+.ta-info-note li {
+    color: #586273;
+    font-size: .84rem;
+    line-height: 1.7;
+    margin-bottom: 5px;
+}
+
+.ta-footer-note {
+    margin-top: 18px;
+}
+
+.ta-footer-note small {
+    display: block;
+    color: #77808e;
+    font-size: .75rem;
+    margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+    .ta-requirement-group > summary {
+        padding: 12px;
+        gap: 9px;
+    }
+
+    .ta-requirement-group > summary strong {
+        font-size: .82rem;
+    }
+
+    .ta-requirement-group > summary small {
+        font-size: .7rem;
+    }
+
+    .ta-requirement-group > .list-block {
+        padding: 0 12px 10px;
+    }
+
+    .ta-requirement-group .list-item span {
+        font-size: .8rem;
+    }
+}
+
     }
   </style>
 </head>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 $dbHost = 'localhost';
 $dbUser = 'root';
 $dbPass = '';
-$dbName = 'bimbingan_ta';
+$dbName = 'db_bimbingan_ta';
 
 $koneksi = mysqli_init();
 
